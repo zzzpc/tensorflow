@@ -231,7 +231,7 @@ with tf.Session() as sess:
             print('[Train] Step: %d, loss: %4.5f, acc: %4.5f'% (i + 1, loss_val, acc_val))
 
         if (i + 1) % 5000 == 0:
-            test_data = CifarDate(test_filenames,test_labels, False)
+            test_data = CifarDate(test_filename,test_labels, False)
             all_test_acc_val = []
             for j in range(test_steps):
                 test_batch_data, test_batch_labels = test_data.next_batch(batch_size)
