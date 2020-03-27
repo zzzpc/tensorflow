@@ -11,16 +11,16 @@
 #include <algorithm>
 using namespace std;
 #define N 600000
-#define M 10000
+#define M 30000
 #define RN 500
 #define RM 20
 
 int sum = 0;
-char NDb[M][6300] = {};
+char NDb[M][6272] = {};
 char tempstr[M];
 char tempstr1[M];
 char tempstr2[M];
-char  cc[256][10] = 
+char  cc[256][10] =
 { { "00000000" }, { "00000001" }, { "00000010" }, { "00000011" }, { "00000100" }, { "00000101" }, { "00000110" }, { "00000111" }, { "00001000" }, { "00001001" }, { "00001010" }
 , { "00001011" }, { "00001100" }, { "00001101" }, { "00001110" }, { "00001111" }, { "00010000" }, { "00010001" }, { "00010010" }, { "00010011" }, { "00010100" }, { "00010101" }
 , { "00010110" }, { "00010111" }, { "00011000" }, { "00011001" }, { "00011010" }, { "00011011" }, { "00011100" }, { "00011101" }, { "00011110" }, { "00011111" }, { "00100000" }
@@ -55,14 +55,15 @@ typedef struct{
 	char c[4];
 }Ent;
 Ent NDB[N];
-int Pos[6273][2] = { 0 };
+int Pos[6272][2] = { 0 };
+double GeNdb[10000][784];
 void init()
 {
 	m = 6272;
 	r = 6.5;
 	p[0] = 0;
-	p[1] = 0.95;
-	p[2] = 0.03;
+	p[1] = 0.62;
+	p[2] = 0.34;
 	p[3] = 1 - p[1] - p[2];
 	cn = int(m*r + 0.5);
 
@@ -117,8 +118,7 @@ void f(char s[])		//生成s[]的负数据库
 
 	//四舍五入 
 	cn = 0;
-	//clock_t start,end; // typedef long clock_t
-	//    start = clock();
+	
 	do
 	{
 		generateRandomNumbers(v, m);			//取3个随机位 
@@ -184,19 +184,15 @@ double  diff(){                  //计算与原串不同的概率
 }
 
 int num_01(){
-	
+
 	for (int i = 0; i < cn; i++){
 		for (int j = 0; j < 3; j++){
-			if (NDB[i].c[j] == '0')    Pos[NDB[i].p[j]][0]++; 
+			if (NDB[i].c[j] == '0')    Pos[NDB[i].p[j]][0]++;
 			else Pos[NDB[i].p[j]][1]++;
 		}
 	}
-	/*
-	for (int i = 0; i < 6273; i++){
-		outfile<<i<<" "<< Pos[i][0] << " " << Pos[i][1] << endl;
-		}
-	*/
 
+	
 	return 0;
 }
 
@@ -207,13 +203,15 @@ double  Pr(int index, int num){       //传入的值为原始穿中第i位的索
 	double pr0 = 0;
 	double pdiff = diff();
 	double psame = 1 - pdiff;
-	//cout <<Pos[index]<<" "<< Pos[index][0]<<" "<<Pos[index][1] << endl;
+	
 	if (num == 1){
 		pr1 = (pow(pdiff, Pos[index][0])*pow(psame, Pos[index][1])) / (pow(pdiff, Pos[index][1])*pow(psame, Pos[index][0]) + pow(pdiff, Pos[index][0])*pow(psame, Pos[index][1]));
+		
 		return pr1;
 	}
 	else{
 		pr0 = (pow(pdiff, Pos[index][1])*pow(psame, Pos[index][0])) / (pow(pdiff, Pos[index][1])*pow(psame, Pos[index][0]) + pow(pdiff, Pos[index][0])*pow(psame, Pos[index][1]));
+		
 		return pr0;
 	}
 
@@ -234,101 +232,79 @@ double  E(int index){      //计算期望值
 	for (int i = 0; i < 256; i++){
 		tmp += calculate(index, i);
 	}
-	tmp = tmp / 256;
+	//tmp = tmp / 256;
 	return tmp;
 }
-void readfile(char arry[]){
-	/*
-	ifstream myfile;
-	myfile.open("G:\\python\\.txt");
-	char tmp;
-	int count = 0;
-	char Ostring[M] = {-1};
-	while (!myfile.eof()){
-	myfile >> tmp;
-	Ostring[count] = tmp;
-	count++;
-	}
-	*/
-	int cc = 0;
-	int temp[8] = { -1 };
+void readfile(char arry[],int count){
 	int count1 = 0;
 	int count2 = 0;
-	double final[785];
-	for (int i = 0; i < 6273; i++){
-		if (i % 8 == 0)		final[count2++] = E(i);     //每隔8位传入原始01串的索引值生成8位01串对应0-255每位值的期望值 count2代表最后生成矩阵的元素个数
+	double final[6272];
+	for (int i = 0; i < 6272; i++){
+		if (i % 8 == 0)		GeNdb[count][count2++]= E(i);     //每隔8位传入原始01串的索引值生成8位01串对应0-255每位值的期望值 count2代表最后生成矩阵的元素个数
 	}
-	//cout << count2;
-	ofstream   outfile;
-	outfile.open("G:\\python\\dataset_out.txt", ios::app);
-	for (int i = 0; i < 784; i++){
-			outfile << final[i] << " ";
-		}
-		outfile << endl;
-	
-	outfile.close();
 	return;
 }
 int main(){
-	/*
+	
+	init();
 	ifstream myfile;
 	string tmp;
-	char index[100] = { 0 };
-	char NDb[N];
+	
+	myfile.open("H:\\cc_4.txt");
 	int count = 0;
-	init();
-	time_t  start = time(NULL);
-	sprintf(index, "G:\\python\\zpc.txt");
-	myfile.open(index);
-	while (getline(myfile, tmp))   //按行读取,遇到换行符结束
+	while (!myfile.eof())   //按行读取,遇到换行符结束
 	{
-	count++;
-	f(strcpy(NDb, tmp.c_str()));
-	printNDB();
-	//cout<<tmp << endl;
-	}
-
-	time_t  end = time(NULL);
-	cout << "算法执行持续时间：" << difftime(end, start) << "秒" << count<<endl;
-	*/
-
-	init();
-	ifstream myfile;
-	string tmp;
-	time_t  start = time(NULL);
-	myfile.open("G:\\python\\dataset.txt");
-	int count = 0;
-	while (!myfile.eof() )   //按行读取,遇到换行符结束
-	{   
 		myfile >> tmp;
 		if (myfile.peek() == EOF)  break;
 		(strcpy(NDb[count++], tmp.c_str()));
+		//if (count == 10) break;
+
 		
-		
-		//cout << tmp.length();    输出图片的长度
-		//cout<<tmp << endl;
-}
+	}
+	myfile.close();
 	cout << count << "张图片的01串已经生成" << endl;
-	
-	
-	//cout << (sizeof(NDb) / sizeof(NDb[0])) << endl;
+
+
+	time_t  start = time(NULL);
 	for (int i = 0; i < count; i++){
 		f(NDb[i]); //生成每张图片所对应的负数据库记录。
+		
+	}
+	time_t  end = time(NULL);
+
+	cout << "算法生成负数据库持续时间：" << difftime(end, start) << "秒" << endl;
+
+	time_t  start1 = time(NULL);
+	for (int i = 0; i < count; i++){
 		num_01();    //计算负数据库中所有记录条数中相对于原串中为位分别为0 或者1的个数
-		readfile(NDb[i]);  //生成每张求完期望之后的图片
-		for (int i = 0; i < 6300; i++){
+		readfile(NDb[i], i);  //生成每张求完期望之后的图片
+		for (int i = 0; i < 6272; i++){
 			for (int j = 0; j < 2; j++){
 				Pos[i][j] = 0;
 			}
 		}
-
+		
 	}
-	myfile.close();
-	cout << "10000张图片的MNIST 矩阵已经生成" << endl;
-	time_t  end = time(NULL);
-	cout << "算法执行持续时间：" << difftime(end, start) << "秒" << endl;
-	time_t  start1 = time(NULL);
-
 	time_t  end1 = time(NULL);
-	cout << "算法执行持续时间：" << difftime(end1, start1) << "秒" << endl;
+	cout << "数据重构持续时间：" << difftime(end1, start1) << "秒" << endl;
+
+	ofstream   outfile;
+	outfile.open("H:\\mnist6234_4.txt", ios::app);
+
+	time_t  start2 = time(NULL);
+	for (int i = 0; i < count; i++){
+		for (int j = 0; j < 784; j++){
+			outfile << GeNdb[i][j] << " ";
+		}
+		outfile << endl;
+	}
+	outfile.close();
+	time_t  end2 = time(NULL);
+	cout << "负数据库写入持续时间：" << difftime(end2, start2) << "秒" << endl;
+
+
+
+
+
+
 }
