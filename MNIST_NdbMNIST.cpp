@@ -49,6 +49,7 @@ char s[M];
 int m;
 int cn;
 double p[4];
+double q[8];
 double r = 6.5;
 typedef struct{
 	int p[3];				//三个位 
@@ -56,16 +57,32 @@ typedef struct{
 }Ent;
 Ent NDB[N];
 int Pos[6272][2] = { 0 };
-double GeNdb[10000][784];
+double Gen[10000][784];
+double posbility[2] = { 0 };
+
+double  diff(){                  //计算与原串不同的概率
+	double Pdiff = 0;
+	for (int i = 1; i <= 3; i++){
+		Pdiff += p[i] * i;
+	}
+	Pdiff = Pdiff / 3;
+	return Pdiff;
+
+}
 void init()
 {
 	m = 6272;
 	r = 6.5;
 	p[0] = 0;
-	p[1] = 0.62;
-	p[2] = 0.34;
+	p[1] = 0.95;
+	p[2] = 0.03;
 	p[3] = 1 - p[1] - p[2];
 	cn = int(m*r + 0.5);
+
+	posbility[0] = diff();
+	posbility[1] = 1 - posbility[0];
+
+
 
 }
 
@@ -118,7 +135,7 @@ void f(char s[])		//生成s[]的负数据库
 
 	//四舍五入 
 	cn = 0;
-	
+
 	do
 	{
 		generateRandomNumbers(v, m);			//取3个随机位 
@@ -173,15 +190,8 @@ void printNDB()				//输出确定位和确定位的值
 	outfile.close();
 }
 
-double  diff(){                  //计算与原串不同的概率
-	double Pdiff = 0;
-	for (int i = 1; i <= 3; i++){
-		Pdiff += p[i] * i;
-	}
-	Pdiff = Pdiff / 3;
-	return Pdiff;
 
-}
+
 
 int num_01(){
 
@@ -191,8 +201,8 @@ int num_01(){
 			else Pos[NDB[i].p[j]][1]++;
 		}
 	}
-
 	
+
 	return 0;
 }
 
@@ -201,17 +211,15 @@ double  Pr(int index, int num){       //传入的值为原始穿中第i位的索
 	int n1 = 1;
 	double pr1 = 0;
 	double pr0 = 0;
-	double pdiff = diff();
-	double psame = 1 - pdiff;
-	
+	int tmp = index % 8;
+	double pdiff = posbility[0];  ////  
+	double psame = posbility[1];  ////   
 	if (num == 1){
 		pr1 = (pow(pdiff, Pos[index][0])*pow(psame, Pos[index][1])) / (pow(pdiff, Pos[index][1])*pow(psame, Pos[index][0]) + pow(pdiff, Pos[index][0])*pow(psame, Pos[index][1]));
-		
 		return pr1;
 	}
 	else{
 		pr0 = (pow(pdiff, Pos[index][1])*pow(psame, Pos[index][0])) / (pow(pdiff, Pos[index][1])*pow(psame, Pos[index][0]) + pow(pdiff, Pos[index][0])*pow(psame, Pos[index][1]));
-		
 		return pr0;
 	}
 
@@ -235,76 +243,57 @@ double  E(int index){      //计算期望值
 	//tmp = tmp / 256;
 	return tmp;
 }
-void readfile(char arry[],int count){
-	int count1 = 0;
+void readfile(int count){
+
 	int count2 = 0;
-	double final[6272];
 	for (int i = 0; i < 6272; i++){
-		if (i % 8 == 0)		GeNdb[count][count2++]= E(i);     //每隔8位传入原始01串的索引值生成8位01串对应0-255每位值的期望值 count2代表最后生成矩阵的元素个数
+		if (i % 8 == 0)		Gen[count][count2++] = E(i);     //每隔8位传入原始01串的索引值生成8位01串对应0-255每位值的期望值 count2代表最后生成矩阵的元素个数
 	}
+
 	return;
 }
 int main(){
-	
+
 	init();
 	ifstream myfile;
 	string tmp;
-	
-	myfile.open("H:\\cc_4.txt");
+	myfile.open("H:\\cc_test.txt");
 	int count = 0;
 	while (!myfile.eof())   //按行读取,遇到换行符结束
 	{
 		myfile >> tmp;
 		if (myfile.peek() == EOF)  break;
 		(strcpy(NDb[count++], tmp.c_str()));
-		//if (count == 10) break;
+		if (count == 100) break;
 
-		
+
 	}
 	myfile.close();
 	cout << count << "张图片的01串已经生成" << endl;
 
-
 	time_t  start = time(NULL);
+
 	for (int i = 0; i < count; i++){
 		f(NDb[i]); //生成每张图片所对应的负数据库记录。
-		
-	}
-	time_t  end = time(NULL);
-
-	cout << "算法生成负数据库持续时间：" << difftime(end, start) << "秒" << endl;
-
-	time_t  start1 = time(NULL);
-	for (int i = 0; i < count; i++){
 		num_01();    //计算负数据库中所有记录条数中相对于原串中为位分别为0 或者1的个数
-		readfile(NDb[i], i);  //生成每张求完期望之后的图片
+		readfile(i);  //生成每张求完期望之后的图片
 		for (int i = 0; i < 6272; i++){
 			for (int j = 0; j < 2; j++){
 				Pos[i][j] = 0;
 			}
 		}
-		
 	}
-	time_t  end1 = time(NULL);
-	cout << "数据重构持续时间：" << difftime(end1, start1) << "秒" << endl;
-
+	time_t  end = time(NULL);
+	cout << "负数据库生成以及重构执行持续时间：" << difftime(end, start) << "秒" << endl;
 	ofstream   outfile;
-	outfile.open("H:\\mnist6234_4.txt", ios::app);
-
-	time_t  start2 = time(NULL);
+	outfile.open("H:\\k.txt", ios::app);
 	for (int i = 0; i < count; i++){
-		for (int j = 0; j < 784; j++){
-			outfile << GeNdb[i][j] << " ";
+		for (int j = 0; j <784; j++){
+			outfile << Gen[i][j] << " ";
 		}
 		outfile << endl;
+
 	}
 	outfile.close();
-	time_t  end2 = time(NULL);
-	cout << "负数据库写入持续时间：" << difftime(end2, start2) << "秒" << endl;
-
-
-
-
-
 
 }
