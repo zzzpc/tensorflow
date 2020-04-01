@@ -57,10 +57,11 @@ typedef struct{
 }Ent;
 Ent NDB[N];
 int Pos[6272][2] = { 0 };
-double Gen[10000][784];
-double posbility[8][2] = { 0 };
+double Gen[60000][784];
+double posbility[8][2] = {0};
 
-double  diff(int i){                  //计算与原串不同的概率
+
+double  diff(int i){                  //计算每一位与原串不同的概率
 	double Ndiff = 0;
 	double Nsame = 0;
 	for (int j = 1; j <= 3; j++){
@@ -80,20 +81,20 @@ void init()
 	m = 6272;
 	r = 6.5;
 	p[0] = 0;
-	p[1] = 1;
-	p[2] = 0;
+	p[1] = 0.95;
+	p[2] = 0.03;
 	p[3] = 1 - p[1] - p[2];
 	cn = int(m*r + 0.5);
 
 
-	q[0] = 0.3;
-	q[1] = 0.1;
-	q[2] = 0.1;
-	q[3] = 0.1;
-	q[4] = 0.1;
-	q[5] = 0.1;
-	q[6] = 0.1;
-	q[7] = 0.1;
+	q[0] = 0.2;
+	q[1] = 0.2;
+	q[2] = 0.125;
+	q[3] = 0.125;
+	q[4] = 0.125;
+	q[5] = 0.125;
+	q[6] = 0.05;
+	q[7] = 0.05;
 
 
 	for (int i = 0; i < 8; i++){
@@ -166,12 +167,11 @@ void f(char s[])		//生成s[]的负数据库
 
 	//四舍五入 
 	cn = 0;
-	//clock_t start,end; // typedef long clock_t
-	//    start = clock();
+	
 	do
 	{
 		//取3个随机位 
-		t = rand1();				//生成0~1之间的小数 
+ 		t = rand1();				//生成0~1之间的小数 
 		if (t<p[1])                 //生成类型一
 		{
 			int diff1 = 0;
@@ -195,7 +195,7 @@ void f(char s[])		//生成s[]的负数据库
 			while (same2 == diff1 || same2 == same1){
 				same2 = rand1(8);
 			}
-			v.p[2] = same2 + attr1 * 8;
+			v.p[2] = same2 + attr1 * 8 ;
 			v.c[2] = s[v.p[2]];
 
 
@@ -217,7 +217,7 @@ void f(char s[])		//生成s[]的负数据库
 				diff2 = generateRandomNumbers(rand1());
 			}
 
-			v.p[1] = diff2 + attr * 8;
+			v.p[1] = diff2 + attr * 8 ;
 			v.c[1] = '1' + '0' - s[v.p[1]];
 
 			same1 = rand1(8);
@@ -278,7 +278,6 @@ void printNDB()				//输出确定位和确定位的值
 
 
 int num_01(){
-
 	for (int i = 0; i < cn; i++){
 		for (int j = 0; j < 3; j++){
 			if (NDB[i].c[j] == '0')    Pos[NDB[i].p[j]][0]++;
@@ -291,13 +290,11 @@ int num_01(){
 }
 
 double  Pr(int index, int num){       //传入的值为原始穿中第i位的索引值(可以认为第i个属性值的第一位索引值    num为原串在该位的值为0或者1)
-	int n0 = 0;
-	int n1 = 1;
 	double pr1 = 0;
 	double pr0 = 0;
 	int tmp = index % 8;
-	double pdiff = diff(tmp);    //posbility[tmp][0];
-	double psame = 1 - pdiff;     //posbility[tmp][1];
+	double pdiff = posbility[tmp][0];
+	double psame = posbility[tmp][1];
 	if (num == 1){
 		pr1 = (pow(pdiff, Pos[index][0])*pow(psame, Pos[index][1])) / (pow(pdiff, Pos[index][1])*pow(psame, Pos[index][0]) + pow(pdiff, Pos[index][0])*pow(psame, Pos[index][1]));
 		return pr1;
@@ -338,46 +335,55 @@ void readfile(int count){
 }
 int main(){
 
+
 	init();
-	ifstream myfile;
-	string tmp;
-	myfile.open("H:\\cc_test.txt");
-	int count = 0;
-	while (!myfile.eof())   //按行读取,遇到换行符结束
-	{
-		myfile >> tmp;
-		if (myfile.peek() == EOF)  break;
-		(strcpy(NDb[count++], tmp.c_str()));
-		if (count == 100) break;
+	string filein[6] = { { "H:\\cc_test.txt" }, { "H:\\cc_2.txt" }, { "H:\\cc_3.txt" }, { "H:\\cc_4.txt" }, { "H:\\cc_5.txt" }, { "H:\\cc_6.txt" } };
+	string fileout[6] = { { "H:\\mm_test.txt" }, { "H:\\mm_2.txt" }, { "H:\\mm_3.txt" }, { "H:\\mm_4.txt" }, { "H:\\mm_5.txt" }, { "H:\\mm_6.txt" } };
+	for (int each = 0; each < 1; each++){
 
 
-	}
-	myfile.close();
-	cout << count << "张图片的01串已经生成" << endl;
+		ifstream myfile;
+		string tmp;
+		myfile.open(filein[each]);
+		int count = 0;
+		while (!myfile.eof())   //按行读取,遇到换行符结束 
+		{
+			myfile >> tmp;
+			if (myfile.peek() == EOF)  break;
+			(strcpy(NDb[count++], tmp.c_str()));
+			//if (count == 100) break;
 
-	time_t  start = time(NULL);
 
-	for (int i = 0; i < count; i++){
-		f(NDb[i]); //生成每张图片所对应的负数据库记录。
-		num_01();    //计算负数据库中所有记录条数中相对于原串中为位分别为0 或者1的个数
-		readfile(i);  //生成每张求完期望之后的图片
-		for (int i = 0; i < 6272; i++){
-			for (int j = 0; j < 2; j++){
-				Pos[i][j] = 0;
+		}
+		myfile.close();
+		cout << count << "张图片的01串已经生成" << endl;
+
+		time_t  start = time(NULL);
+
+		for (int i = 0; i < count; i++){
+			f(NDb[i]); //生成每张图片所对应的负数据库记录。
+			num_01();    //计算负数据库中所有记录条数中相对于原串中为位分别为0 或者1的个数
+			readfile(i);  //生成每张求完期望之后的图片
+			for (int j = 0; j < 6272; j++){
+				for (int k = 0; k < 2; k++){
+					Pos[j][k] = 0;
+				}
 			}
+			if (i % 2500 == 0){ cout << "第" << i << "张图片已经生成" << endl; }
+
 		}
-	}
-	time_t  end = time(NULL);
-	cout << "负数据库生成以及重构执行持续时间：" << difftime(end, start) << "秒" << endl;
-	ofstream   outfile;
-	outfile.open("H:\\k.txt", ios::app);
-	for (int i = 0; i < count; i++){
-		for (int j = 0; j <784; j++){
-			outfile << Gen[i][j] << " ";
+		time_t  end = time(NULL);
+		cout << "负数据库生成以及重构执行持续时间：" << difftime(end, start) << "秒" << endl;
+		ofstream   outfile;
+		outfile.open(fileout[each], ios::app);
+		for (int i = 0; i < count; i++){
+			for (int j = 0; j < 784; j++){
+				outfile << Gen[i][j] << " ";
+			}
+			outfile << endl;
+
 		}
-		outfile << endl;
+		outfile.close();
 
 	}
-	outfile.close();
-
 }
