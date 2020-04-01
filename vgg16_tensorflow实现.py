@@ -1,6 +1,7 @@
 import pickle
 import numpy as np
 import  tensorflow as tf
+from keras.utils import to_categorical
 # ========数据处理=========
 
 data_dir='/input/cifar10/cifar-10-batches-py/'
@@ -8,6 +9,8 @@ class_num=10
 image_size=32
 img_channels=3
 # 读文件
+
+"""
 def unpickle(file):
     with open(file, 'rb') as fo:
         dict = pickle.load(fo, encoding='latin1')
@@ -36,9 +39,9 @@ def load_data(files, data_dir, label_count):
     # 标签labels从0-9的数字转化为float类型(-1,10)的标签矩阵
     labels = np.array([[float(i == label) for i in range(label_count)] for label in labels])
     # 将图片数据从(-1,3072)转化为(-1,3,32,32)
-    data = data.reshape([-1, img_channels, image_size, image_size])
+    #data = data.reshape([-1, img_channels, image_size, image_size])
     # 将(-1,3,32,32)转化为(-1,32,32,3)的图片标准输入
-    data = data.transpose([0, 2, 3, 1])
+    #data = data.transpose([0, 2, 3, 1])
 
     # data数据归一化
 
@@ -68,6 +71,8 @@ def prepare_data():
     print("======数据准备结束======")
 
     return train_data, train_labels, test_data, test_labels
+
+
 
 class CifarDate:
     def __init__(self,data,labels,need_shuffle):
@@ -101,8 +106,72 @@ class CifarDate:
         self.start = end
         return batch_data,batch_labels
 
-
-
+"""
+    
+test_labels = []
+with open('/input/cifar10/cifar-10-batches-py/test_batch', mode='rb') as file:
+    data_dict = pickle.load(file, encoding='bytes')
+    test_labels += list(data_dict[b'labels'])
+test_labels = np.array(test_labels)
+one_hot_test=to_categorical(test_labels)
+train_labels = []
+for each in range(5):
+    with open('/input/cifar10/cifar-10-batches-py/data_batch_%s' % str(each + 1), mode='rb') as file:
+        data_dict = pickle.load(file, encoding='bytes')
+        train_labels += list(data_dict[b'labels'])
+train_labels = np.array(train_labels)
+one_hot_train=to_categorical(train_labels)
+class CifarDate:
+    def __init__(self, filename, labels, need_shuffle):
+        data_length = int(len(labels))
+        file_num = int(data_length / 10000)
+        images_T = (np.empty([data_length, 3072])).astype(np.float32)  # 对numpy float64进行数据转换  python32
+        xy = []
+        for each_file in range(file_num):
+            f = open(filename[each_file])
+            for each_img in range(10000):
+                for i in range(3):
+                    data = f.readline()
+                    count = 0
+                    for each in data.split(' ')[:-1]:
+                        each = float(each)
+                        images_T[each_img + 10000 * each_file][count + 1024 * i] = each
+                        count += 1
+                tmp = np.reshape(images_T[each_img + 10000 * each_file], (3072))
+                xy.append((tmp))
+            f.close()
+        xy = np.array(xy)
+        self._data = xy
+        self._labels = labels
+        self.start = 0
+        self._num_examples = self._data.shape[0]
+        self._need_shuffle = need_shuffle
+        if self._need_shuffle:
+            self._shuffle_data()
+    def _shuffle_data(self):
+        p = np.random.permutation(self._num_examples)
+        self._data = self._data[p]
+        self._labels = self._labels[p]
+    def next_batch(self, batch_size):
+        end = self.start + batch_size
+        if end > self._num_examples:
+            if self._need_shuffle:
+                self._shuffle_data()
+                self.start = 0
+                end = batch_size
+            else:
+                raise Exception('have no more examples')
+        if end > self._num_examples:
+            raise Exception('batch size is larger than all examplts')
+        batch_data = self._data[self.start:end]
+        batch_labels = self._labels[self.start:end]
+        self.start = end
+        return batch_data, batch_labels
+train_filename = ['/input/cifar102/qk_1.txt', '/input/cifar102/qk_2.txt', '/input/cifar102/qk_3.txt',
+                  '/input/cifar102/qk_4.txt', '/input/cifar102/qk_5.txt']
+test_filename = ['/input/cifar102/qk_test.txt']
+train = CifarDate(train_filename,one_hot_train, True)
+test_data = CifarDate(test_filename, one_hot_test, False)
 
 
 def weight_variable(name,shape):
@@ -167,7 +236,7 @@ def vgg_net(_X, _weights,_biases,keep_prob):
 weights={  #字典类型
     'wc1_1' : weight_variable('wc1_1', [3,3,3,64]),
     'wc1_2' : weight_variable('wc1_2', [3,3,64,64]),
-'wc2_1' : weight_variable('wc2_1', [3,3,64,128]),
+    'wc2_1' : weight_variable('wc2_1', [3,3,64,128]),
     'wc2_2' : weight_variable('wc2_2', [3,3,128,128]),
     'wc3_1' : weight_variable('wc3_1', [3,3,128,256]),
     'wc3_2' : weight_variable('wc3_2', [3,3,256,256]),
@@ -203,48 +272,68 @@ biases={
 }
 
 
-def test_op(data,epoch):
-    batch_size = 60
-    steps = int(len(train_x) /batch_size)
-    acc=0
-    loss=0
-    for i in range(steps):
-        batch_x,batch_y=data.next_batch(batch_size)
-        loss_, acc_ = sess.run([cross_entropy, accuracy],
-                               feed_dict={x: batch_x, y_: batch_y, keep_prob: 1.0, train_flag: False})
-        loss += loss_
-        acc += acc_
-    print("epcho: %d,  loss: %.4f, acc: %.4f" % (epoch,  loss/steps, acc/steps))
-
-
-
 
 
 if __name__ == '__main__':
-    x=tf.placeholder(tf.float32,[None,image_size,image_size,3])
+    x=tf.placeholder(tf.float32,[None,3072])
     y_=tf.placeholder(tf.float32,[None,10])
+    
+    #x_image = tf.reshape(x, [-1, 3, 32, 32])
+    #x_image = tf.transpose(x_image, perm=[0, 2, 3, 1])
+    x_image = tf.reshape(x,[-1,3,32,32])
+    x_image = tf.transpose(x_image, perm=[0, 2, 3, 1])
+
+    x_image_arr = tf.split(x_image,num_or_size_splits=64,axis=0)
+
+    result_x_image_arr = []
+
+    # 数据优化
+    for x_single_image in x_image_arr:
+        x_single_image = tf.reshape(x_single_image,[32,32,3])
+        #随机翻转
+        data_aug_1 = tf.image.random_flip_left_right(x_single_image)
+        #调整光照
+        data_aug_2 = tf.image.random_brightness(data_aug_1,max_delta=63)
+        #改变对比度
+        data_aug_3 = tf.image.random_contrast(data_aug_2,lower=0.2,upper=1.8)
+        #白化
+        data_aug_4 = tf.image.per_image_standardization(data_aug_3)
+        x_single_image = tf.reshape(data_aug_4,[1,32,32,3])
+        result_x_image_arr.append(x_single_image)
+
+# 拼接
+    result_x_images = tf.concat(result_x_image_arr,axis=0)
+    
     keep_prob=tf.placeholder(tf.float32)
     train_flag=tf.placeholder(tf.bool)
     learning_rate=tf.placeholder(tf.float32)
 
-    output=vgg_net(x,weights,biases,keep_prob)
+    #output=vgg_net(x_image,weights,biases,keep_prob)
+    output=vgg_net(result_x_images,weights,biases,keep_prob)
 
     correct_prediction=tf.equal(tf.argmax(output,1),tf.argmax(y_,1))
     accuracy=tf.reduce_mean(tf.cast(correct_prediction,tf.float32))
-
+    
+    
+      
     with tf.name_scope('loss') :
         cross_entropy=tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=y_,logits=output))
         l2=tf.add_n([tf.nn.l2_loss(var) for var in tf.trainable_variables()])                           # 对所有训练参数加入l2正则化
+    update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+    with tf.control_dependencies(update_ops):
+       
+        with tf.name_scope('train_op'):
+            train_step=tf.train.AdamOptimizer(learning_rate=learning_rate,beta1=0.9,beta2=0.999 ,epsilon=1e-8).minimize(cross_entropy+l2*5e-10)
 
-    with tf.name_scope('train_op'):
-        train_step=tf.train.AdamOptimizer(learning_rate=learning_rate,beta1=0.9,beta2=0.999 ,epsilon=1e-8).minimize(cross_entropy+l2*5e-10)
-
-    train_x, train_y, test_x, test_y = prepare_data()
+    #train_x, train_y, test_x, test_y = prepare_data()
     batch_size=64
-    steps=int(len(train_x)/64)
-    epochs=40
-    train=CifarDate(train_x,train_y,need_shuffle=True)
-    test_data=CifarDate(test_x,test_y,need_shuffle=False)
+    steps=int(50000/64)
+    epochs=100
+    #train=CifarDate(train_x,train_y,need_shuffle=True)
+    #test_data=CifarDate(test_x,test_y,need_shuffle=False)
+    train_acc=[]
+    train_loss=[]
+    test_acc=[]
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
         alpha=0.001
@@ -257,19 +346,34 @@ if __name__ == '__main__':
             for i in range(steps):
                 batch_x,batch_y=train.next_batch(batch_size)
                 _, batch_loss=sess.run([train_step,cross_entropy],feed_dict={x:batch_x,y_:batch_y,keep_prob:0.5,train_flag:True,learning_rate:alpha})
+                #print(batch_x[0])
                 batch_acc=accuracy.eval(feed_dict={x:batch_x,y_:batch_y,keep_prob:0.5,train_flag:True,learning_rate:alpha})
+
                 #loss+=batch_loss
                 #acc+=batch_acc
                 if i%100==0:
+                    train_acc.append(batch_acc)
+                    train_loss.append(batch_loss)
                     print("epcho: %d, iterations: %d, loss: %.4f, acc: %.4f" % (ep, i, batch_loss, batch_acc))
 
-            test_data=CifarDate(test_x,test_y,need_shuffle=False)
-            for i in range(200):
-                batch_x,batch_y=test_data.next_batch(50)
+            #test_data=CifarDate(test_x,test_y,need_shuffle=False)
+            test_data = CifarDate(test_filename, one_hot_test, False)
+            for i in range(156):
+                batch_x,batch_y=test_data.next_batch(64)
                 loss_, acc_ = sess.run([cross_entropy, accuracy],
                                feed_dict={x: batch_x, y_: batch_y, keep_prob: 1.0, train_flag: False})
                 loss += loss_
                 acc += acc_
-            print("epcho: %d,  loss: %.4f, acc: %.4f" % (ep,  loss/200, acc/200))
-
+            test_acc.append(acc/156)
+            print("epcho: %d,  loss: %.4f, acc: %.4f" % (ep,  loss/156, acc/156))
+            
+            
+        print(test_acc)
+        with open("acc2.txt", "w") as f:
+            for i in range(len(train_loss)):
+                f.write(str(train_loss[i]))
+                f.write(" ")
+                f.write(str(train_acc[i]))
+                f.write(" ")
+                f.write('\n')
 
