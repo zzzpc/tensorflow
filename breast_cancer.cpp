@@ -22,13 +22,13 @@ char tempstr1[M];
 char tempstr2[M];
 char  cc[16][10] =
 { { "0000" }, { "0001" }, { "0010" }, { "0011" }, { "0100" }, { "0101" }, { "0110" }, { "0111" }, { "1000" }, { "1001" },
-  { "1010" }, { "1011" }, { "1100" }, { "1101" }, { "1110" }, { "1111" }, };
+{ "1010" }, { "1011" }, { "1100" }, { "1101" }, { "1110" }, { "1111" }, };
 char s[M];
 int m;
 int cn;
 double p[4];
 double q[4];
-double r ;
+double r;
 typedef struct{
 	int p[3];				//三个位 
 	char c[4];
@@ -57,19 +57,19 @@ double  diff(int i){                  //计算每一位与原串不同的概率
 void init()
 {
 	m = 36;
-	r = 15;
+	r = 6.5;
 	p[0] = 0;
-	p[1] = 0.82;
-	p[2] = 0.14;
+	p[1] = 0.7;
+	p[2] = 0.24;
 	p[3] = 1 - p[1] - p[2];
 	cn = int(m*r + 0.5);
 
 
-	q[0] = 0.91;
-	q[1] = 0.03;
-	q[2] = 0.03;
-	q[3] = 0.03;
-	
+	q[0] = 0.3;
+	q[1] = 0.1;
+	q[2] = 0.1;
+	q[3] = 0.5;
+
 
 
 	for (int i = 0; i < 4; i++){
@@ -312,7 +312,7 @@ int main(){
 		cout << posbility[i][0] << " " << posbility[i][1] << " ";
 	}
 	string filein[6] = { { "H:\\breast_cancer\\test4.txt" }, { "H:\\cc_2.txt" }, { "H:\\cc_3.txt" }, { "H:\\cc_4.txt" }, { "H:\\cc_5.txt" }, { "H:\\cc_6.txt" } };
-	string fileout[6] = { { "H:\\breast_cancer\\ndb_test_9.txt" }, { "H:\\mm_0802_2.txt" }, { "H:\\mm_0802_3.txt" }, { "H:\\mm_0802_4.txt" }, { "H:\\mm_0802_5.txt" }, { "H:\\mm_0802_6.txt" } };
+	string fileout[6] = { { "H:\\breast_cancer\\070_test.txt" }, { "H:\\mm_0802_2.txt" }, { "H:\\mm_0802_3.txt" }, { "H:\\mm_0802_4.txt" }, { "H:\\mm_0802_5.txt" }, { "H:\\mm_0802_6.txt" } };
 	for (int each = 0; each < 1; each++){
 
 
