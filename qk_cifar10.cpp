@@ -58,7 +58,7 @@ typedef struct{
 Ent NDB[N];
 int Pos[8192][2] = { 0 };
 double Gen[30000][1024];
-double posbility[8][2] = {0};
+double posbility[8][2] = { 0 };
 
 
 double  diff(int i){                  //计算每一位与原串不同的概率
@@ -81,8 +81,8 @@ void init()
 	m = 8192;
 	r = 6.5;
 	p[0] = 0;
-	p[1] = 0.6;
-	p[2] = 0.35;
+	p[1] = 0.70;
+	p[2] = 0.24;
 	p[3] = 1 - p[1] - p[2];
 	cn = int(m*r + 0.5);
 
@@ -117,14 +117,14 @@ double rand1()
 int  generateRandomNumbers(double l)	//取了三个随机位 
 {
 
-	if (l < q[7]) return 7;
-	else if (l < q[7] + q[6]) return 6;
-	else if (l < q[7] + q[6] + q[5])return 5;
-	else if (l < q[7] + q[6] + q[5] + q[4])return 4;
-	else if (l < q[7] + q[6] + q[5] + q[4] + q[3])return 3;
-	else if (l < q[7] + q[6] + q[5] + q[4] + q[3] + q[2])return 2;
-	else if (l < q[7] + q[6] + q[5] + q[4] + q[3] + q[2] + q[1])return 1;
-	else return 0;
+	if (l < q[0]) return 0;
+	else if (l < q[0] + q[1]) return 1;
+	else if (l < q[0] + q[1] + q[2])return 2;
+	else if (l < q[0] + q[1] + q[2] + q[3])return 3;
+	else if (l < q[0] + q[1] + q[2] + q[3] + q[4])return 4;
+	else if (l < q[0] + q[1] + q[2] + q[3] + q[4] + q[5])return 5;
+	else if (l < q[0] + q[1] + q[2] + q[3] + q[4] + q[5] + q[6])return 6;
+	else return 7;
 
 }
 
@@ -167,64 +167,72 @@ void f(char s[])		//生成s[]的负数据库
 
 	//四舍五入 
 	cn = 0;
-	
+
 	do
 	{
 		//取3个随机位 
- 		t = rand1();				//生成0~1之间的小数 
-		if (t<p[1])                 //生成类型一
+		t = rand1();				//生成0~1之间的小数 
+		if (t < p[1])                 //生成类型一
 		{
 			int diff1 = 0;
 			int same1 = 0;
 			int same2 = 0;
 			int attr1 = 0;
+			int attr2 = 0;
+			int attr3 = 0;
 			u = rand1();
 			diff1 = generateRandomNumbers(u);  //通过属性q决定属性的哪一位与原始位不同
 			attr1 = rand1(m / 8);
-			v.p[0] = diff1 + attr1 * 8 ;      //生成的反转位
+			v.p[0] = diff1 + attr1 * 8;      //生成的反转位
 			v.c[0] = '1' + '0' - s[v.p[0]];
 
 			same1 = rand1(8);
-			while (same1 == diff1){
+			attr2 = rand1(m / 8);
+
+			while ((same1 + attr2 * 8) == v.p[0]){
 				same1 = rand1(8);
 			}
-			v.p[1] = same1 + attr1 * 8 ;
+			v.p[1] = same1 + attr2 * 8;
 			v.c[1] = s[v.p[1]];
 
+
 			same2 = rand1(8);
-			while (same2 == diff1 || same2 == same1){
+			attr3 = rand1(m / 8);
+			while ((same2 + attr3 * 8) == v.p[0] || (same2 + attr3 * 8) == v.p[1]){
 				same2 = rand1(8);
 			}
-			v.p[2] = same2 + attr1 * 8 ;
+			v.p[2] = same2 + attr3 * 8;
 			v.c[2] = s[v.p[2]];
 
 
 		}
-		else if (t<p[1] + p[2])
+		else if (t < p[1] + p[2])
 		{
 			int diff1 = 0;
 			int diff2 = 0;
 			int same1 = 0;
-			int attr = 0;
-
+			int attr1 = 0;
+			int attr2 = 0;
+			int attr3 = 0;
 			diff1 = generateRandomNumbers(rand1());  //通过属性q决定属性的哪一位与原始位不同
-			diff2 = generateRandomNumbers(rand1());
-
-			attr = rand1(m / 8);
-			v.p[0] = diff1 + attr * 8 ;      //生成的反转位
+			attr1 = rand1(m / 8);
+			v.p[0] = diff1 + attr1 * 8;      //生成的反转位
 			v.c[0] = '1' + '0' - s[v.p[0]];
-			while (diff2 == diff1){
+
+			diff2 = generateRandomNumbers(rand1());
+			attr2 = rand1(m / 8);
+			while ((diff2 + attr2 * 8) == v.p[0]){
 				diff2 = generateRandomNumbers(rand1());
 			}
-
-			v.p[1] = diff2 + attr * 8 ;
+			v.p[1] = diff2 + attr2 * 8;
 			v.c[1] = '1' + '0' - s[v.p[1]];
 
+			attr3 = rand1(m / 8);
 			same1 = rand1(8);
-			while (same1 == diff1 || same1 == diff2){
+			while ((same1 + attr3 * 8) == v.p[1] || (same1 + attr3 * 8) == v.p[0]){
 				same1 = rand1(8);
 			}
-			v.p[2] = same1 + attr * 8 ;
+			v.p[2] = same1 + attr3 * 8;
 			v.c[2] = s[v.p[2]];
 		}
 		else
@@ -232,22 +240,29 @@ void f(char s[])		//生成s[]的负数据库
 			int diff1 = 0;
 			int diff2 = 0;
 			int diff3 = 0;
-			int attr = 0;
+			int attr1 = 0;
+			int attr2 = 0;
+			int attr3 = 0;
 			diff1 = generateRandomNumbers(rand1());  //通过属性q决定属性的哪一位与原始位不同
-			attr = rand1(m / 8);
-			v.p[0] = diff1 + attr * 8;      //生成的反转位
+			attr1 = rand1(m / 8);
+			v.p[0] = diff1 + attr1 * 8;      //生成的反转位
 			v.c[0] = '1' + '0' - s[v.p[0]];
+
 			diff2 = generateRandomNumbers(rand1());
-			while (diff2 == diff1){
+			attr2 = rand1(m / 8);
+			while ((diff2 + attr2 * 8) == v.p[0]){
 				diff2 = generateRandomNumbers(rand1());
 			}
-			v.p[1] = diff2 + attr * 8;      //生成的反转位
+			v.p[1] = diff2 + attr2 * 8;      //生成的反转位
 			v.c[1] = '1' + '0' - s[v.p[1]];
+
 			diff3 = generateRandomNumbers(rand1());
-			while (diff3 == diff1 || diff3 == diff2){
+			attr3 = rand1(m / 8);
+
+			while ((diff3 + attr3 * 8) == v.p[1] || (diff3 + attr3 * 8) == v.p[0]){
 				diff3 = generateRandomNumbers(rand1());
 			}
-			v.p[2] = diff3 + attr * 8;      //生成的反转位
+			v.p[2] = diff3 + attr3 * 8;      //生成的反转位
 			v.c[2] = '1' + '0' - s[v.p[2]];
 
 		}
@@ -284,8 +299,11 @@ int num_01(){
 			else Pos[NDB[i].p[j]][1]++;
 		}
 	}
-	
-
+	/*
+	for (int i = 0; i < 8192; i++){
+	cout << i << " " << Pos[i][0] << " " << Pos[i][1] << endl;
+	}
+	*/
 	return 0;
 }
 
@@ -295,26 +313,33 @@ double  Pr(int index, int num){       //传入的值为原始穿中第i位的索
 	int tmp = index % 8;
 	double pdiff = posbility[tmp][0];
 	double psame = posbility[tmp][1];
+
+	double var1;
+	double var2;
+	var1 = Pos[index][1] * log(pdiff) + Pos[index][0] * log(psame);
+	var2 = Pos[index][0] * log(pdiff) + Pos[index][1] * log(psame);
+
+	double denominator = exp(var1) + exp(var2);
 	if (num == 1){
-		pr1 = (pow(pdiff, Pos[index][0])*pow(psame, Pos[index][1])) / (pow(pdiff, Pos[index][1])*pow(psame, Pos[index][0]) + pow(pdiff, Pos[index][0])*pow(psame, Pos[index][1]));
+		pr1 = (var2) -log(denominator);
 		return pr1;
 	}
 	else{
-		pr0 = (pow(pdiff, Pos[index][1])*pow(psame, Pos[index][0])) / (pow(pdiff, Pos[index][1])*pow(psame, Pos[index][0]) + pow(pdiff, Pos[index][0])*pow(psame, Pos[index][1]));
+		pr0 =(var1) -log(denominator); 
 		return pr0;
 	}
 
 
 }
 double calculate(int index, int real){        //计算图片每个像素为0-255的概率
-	double sum = 1;
+	double sum = 0;
 	double tmp;
 	for (int i = 0; i < 8; i++){
 		tmp = Pr(index + i, cc[real][i] - '0');
-		sum = sum* tmp;
+		sum+=tmp;
 	}
-	sum *= real;
-	return sum;
+	sum +=log(real);
+	return exp(sum);
 }
 double  E(int index){      //计算期望值   
 	double tmp = 0;
@@ -337,10 +362,13 @@ int main(){
 
 
 	init();
-	
+
+	for (int i = 0; i < 8; i++){
+		cout << posbility[i][0] << " " << posbility[i][1] << " ";
+	}
 	ifstream myfile;
 	string tmp;
-	myfile.open("H:\\Cb_test.txt");
+	myfile.open("H:\\Cb_2.txt");
 	int count = 0;
 	while (!myfile.eof())   //按行读取,遇到换行符结束
 	{
@@ -369,10 +397,10 @@ int main(){
 	time_t  end = time(NULL);
 	cout << "负数据库生成以及重构执行持续时间：" << difftime(end, start) << "秒" << endl;
 	ofstream   outfile;
-	outfile.open("H:\\qk.txt", ios::app);
+	outfile.open("H:\\qk_test.txt", ios::app);
 	for (int i = 0; i < count; i++){
-		for (int j= 0; j <1024; j++){
-			outfile << Gen[i][j]<< " ";
+		for (int j = 0; j <1024; j++){
+			outfile << Gen[i][j] << " ";
 		}
 		outfile << endl;
 
