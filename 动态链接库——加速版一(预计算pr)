@@ -1,0 +1,372 @@
+// dllmain.cpp : 定义 DLL 应用程序的入口点。
+#include "pch.h"
+
+BOOL APIENTRY DllMain(HMODULE hModule,
+	DWORD  ul_reason_for_call,
+	LPVOID lpReserved
+)
+{
+	switch (ul_reason_for_call)
+	{
+	case DLL_PROCESS_ATTACH:
+	case DLL_THREAD_ATTACH:
+	case DLL_THREAD_DETACH:
+	case DLL_PROCESS_DETACH:
+		break;
+	}
+	return TRUE;
+}
+
+#define EXPORT __declspec(dllexport)
+#include<iostream>
+using namespace std;
+
+
+
+typedef struct {
+	int p[3];				//三个位 
+	char c[3];
+}Ent;
+Ent NDB[60000];
+
+typedef struct {
+	double arr[1000];
+}Gen, * Generator;
+
+int  m, cn;
+double r;
+double p[4], q[9];
+double posbility[9][2] = { 0 };
+
+
+int len;
+#define K 3
+const int L = 9;
+#define CN 1000
+#define LEN 256
+double Q[CN][LEN];
+double xq[CN];
+double q0[10], q1[10];
+int N0[9000];//第i个负数据库中第j个位为0的个数
+int N1[9000];
+double pow_b[9] = { 1,2,4,8,16,32,64,128,256 };
+
+
+double  diff(int i) {                  //计算每一位与原串不同的概率
+	double Ndiff = 0;
+	double Nsame = 0;
+	for (int j = 1; j <= 3; j++) {
+		Ndiff += j * p[j] * q[i];
+	}
+	for (int j = 1; j <= 3; j++) {
+		Nsame += ((3 - j) * p[j]) / 9;
+	}
+
+	double Pdiff = 0;
+	Pdiff = Ndiff / (Ndiff + Nsame);
+	return Pdiff;
+
+}
+
+void init(char s[]) {
+
+	m = strlen(s);
+	len = m / 9;
+	r = 6.5;
+	p[0] = 0;
+	p[1] = 0.70;
+	p[2] = 0.24;
+	p[3] = 1 - p[1] - p[2];
+	cn = int(m * r + 0.5);
+
+	q[0] = 0;
+	q[1] = 0.93;
+	q[2] = 0.01;
+	q[3] = 0.01;
+	q[4] = 0.01;
+	q[5] = 0.01;
+	q[6] = 0.01;
+	q[7] = 0.01;
+	q[8] = 0.01;
+
+	for (int i = 0; i < 9; i++) {
+		posbility[i][0] = diff(i);
+		posbility[i][1] = 1 - posbility[i][0];
+	}
+}
+
+
+
+int rand1(int n)
+{
+	//	return rand()%n;
+	return 0 + (int)n * rand() / (RAND_MAX + 1);
+
+
+}
+
+double rand1()
+{
+	return (double)rand() / (RAND_MAX + 1.0);
+}
+
+int  generateRandomNumbers(double l)	//取了三个随机位 
+{
+
+	if (l < q[0]) return 0;
+	else if (l < q[0] + q[1]) return 1;
+	else if (l < q[0] + q[1] + q[2])return 2;
+	else if (l < q[0] + q[1] + q[2] + q[3])return 3;
+	else if (l < q[0] + q[1] + q[2] + q[3] + q[4])return 4;
+	else if (l < q[0] + q[1] + q[2] + q[3] + q[4] + q[5])return 5;
+	else if (l < q[0] + q[1] + q[2] + q[3] + q[4] + q[5] + q[6])return 6;
+	else if (l < q[0] + q[1] + q[2] + q[3] + q[4] + q[5] + q[6] + q[7])return 7;
+	else return 8;
+
+}
+
+
+void addToNDB(Ent x)		//负数据库确定位赋值 
+{
+	int i;
+	for (i = 0; i < 3; i++)
+	{
+		NDB[cn].p[i] = x.p[i];
+		NDB[cn].c[i] = x.c[i];
+	}
+	cn++;
+}
+
+
+
+
+
+
+
+
+void f(char s[])		//生成s[]的负数据库	
+{
+	Ent v;
+	int n;
+	double t;
+	double u;
+	n = int(m * r + 0.5);
+	
+
+	//四舍五入 
+	cn = 0;
+
+	do
+	{
+		//取3个随机位 
+		t = rand1();				//生成0~1之间的小数 
+		if (t < p[1])                 //生成类型一
+		{
+			int diff1 = 0;
+			int same1 = 0;
+			int same2 = 0;
+			int attr1 = 0;
+			int attr2 = 0;
+			int attr3 = 0;
+			u = rand1();
+			diff1 = generateRandomNumbers(u);  //通过属性q决定属性的哪一位与原始位不同
+			attr1 = rand1(len);
+			v.p[0] = diff1 + attr1 * 9;      //生成的反转位
+			v.c[0] = '1' + '0' - s[v.p[0]];
+
+			same1 = rand1(9);
+			attr2 = rand1(len);
+
+			while ((same1 + attr2 * 9) == v.p[0]) {
+				same1 = rand1(9);
+			}
+			v.p[1] = same1 + attr2 * 9;
+			v.c[1] = s[v.p[1]];
+
+
+			same2 = rand1(9);
+			attr3 = rand1(len);
+			while ((same2 + attr3 * 9) == v.p[0] || (same2 + attr3 * 9) == v.p[1]) {
+				same2 = rand1(9);
+			}
+			v.p[2] = same2 + attr3 * 9;
+			v.c[2] = s[v.p[2]];
+
+
+		}
+		else if (t < p[1] + p[2])
+		{
+			int diff1 = 0;
+			int diff2 = 0;
+			int same1 = 0;
+			int attr1 = 0;
+			int attr2 = 0;
+			int attr3 = 0;
+			diff1 = generateRandomNumbers(rand1());  //通过属性q决定属性的哪一位与原始位不同
+			attr1 = rand1(len);
+			v.p[0] = diff1 + attr1 * 9;      //生成的反转位
+			v.c[0] = '1' + '0' - s[v.p[0]];
+
+			diff2 = generateRandomNumbers(rand1());
+			attr2 = rand1(len);
+			while ((diff2 + attr2 * 9) == v.p[0]) {
+				diff2 = generateRandomNumbers(rand1());
+			}
+			v.p[1] = diff2 + attr2 * 9;
+			v.c[1] = '1' + '0' - s[v.p[1]];
+
+			attr3 = rand1(len);
+			same1 = rand1(9);
+			while ((same1 + attr3 * 9) == v.p[1] || (same1 + attr3 * 9) == v.p[0]) {
+				same1 = rand1(9);
+			}
+			v.p[2] = same1 + attr3 * 9;
+			v.c[2] = s[v.p[2]];
+
+		}
+		else
+		{
+			int diff1 = 0;
+			int diff2 = 0;
+			int diff3 = 0;
+			int attr1 = 0;
+			int attr2 = 0;
+			int attr3 = 0;
+			diff1 = generateRandomNumbers(rand1());  //通过属性q决定属性的哪一位与原始位不同
+			attr1 = rand1(len);
+			v.p[0] = diff1 + attr1 * 9;      //生成的反转位
+			v.c[0] = '1' + '0' - s[v.p[0]];
+
+			diff2 = generateRandomNumbers(rand1());
+			attr2 = rand1(len);
+			while ((diff2 + attr2 * 9) == v.p[0]) {
+				diff2 = generateRandomNumbers(rand1());
+				//attr2 = rand1(m / 8);
+
+			}
+			v.p[1] = diff2 + attr2 * 9;      //生成的反转位
+			v.c[1] = '1' + '0' - s[v.p[1]];
+
+			diff3 = generateRandomNumbers(rand1());
+			attr3 = rand1(len);
+
+			while ((diff3 + attr3 * 9) == v.p[1] || (diff3 + attr3 * 9) == v.p[0]) {
+				diff3 = generateRandomNumbers(rand1());
+				//attr3 = rand1(m / 8);
+
+			}
+			v.p[2] = diff3 + attr3 * 9;      //生成的反转位
+			v.c[2] = '1' + '0' - s[v.p[2]];
+			//cout << "success step3" << endl;
+		}
+		addToNDB(v);		//负数据库确定位赋值 
+	} while (cn < n);
+
+}
+
+
+void calQ()
+{
+
+	int maxval = 255;
+
+
+	for (int id = 0; id < m; id++)  //初始化每一位0和1的个数为0
+	{
+		N0[id] = 0;
+		N1[id] = 0;
+	}
+	for (int num = 0; num < cn; num++)   //cn:NDB内串的个数
+	{
+		for (int j = 0; j < 3; j++) //统计每一位0和1的个数
+		{
+			if (NDB[num].c[j] == '1') {
+				N1[NDB[num].p[j]]++;
+			}
+
+			else
+				N0[NDB[num].p[j]]++;
+		}
+	}
+
+	//计算第i个负数据库第j个属性取值为k的概率 Q[M][N][k]
+
+	//初始化
+
+
+	for (int j = 0; j < len; ++j) {
+		for (int k = 0; k < 256; ++k) {
+			Q[j][k] = 0;
+		}
+	}
+
+	//计算第i条数据第j个属性的第i位为0和为1 的概率
+
+	for (int j = 0; j < len; j++) {
+		int countpos = L * j + 1;
+		for (int k = 0; k < 8; k++) {
+			int id = countpos + k;
+			double var1 = N0[id] * log(posbility[k + 1][1]) + N1[id] * log(posbility[k + 1][0]);
+			double var2 = N0[id] * log(posbility[k + 1][0]) + N1[id] * log(posbility[k + 1][1]);
+
+
+			q0[k] = var1 - log(exp(var1) + exp(var2));
+			q1[k] = var2 - log(exp(var1) + exp(var2));
+
+
+		}
+		double sumv = 0;
+		for (int a = 0; a <= maxval; a++) {
+			int k = a;
+			for (int b = 7; b >= 0; b--) {
+				double tmp = pow_b[b];
+				if (k >= tmp) {
+					Q[j][a] = Q[j][a] + q1[7 - b];
+					k = k - tmp;
+				}
+				else {
+					Q[j][a] = Q[j][a] + q0[7 - b];
+				}
+			}
+			sumv += exp(Q[j][a]);
+		}
+		for (int a = 0; a <= maxval; a++)
+		{
+			Q[j][a] = exp(Q[j][a]) / sumv;
+		}
+	}
+
+	for (int j = 0; j < len; j++)
+	{
+		double s2 = 0;
+		for (int x = 0; x <= 255; x++)
+		{
+
+			s2 += x * Q[j][x] / 255;
+		}
+		xq[j] = s2;
+	}
+
+}
+
+
+extern "C" {
+
+
+	EXPORT Generator readfile(char s[]) {
+		init(s);
+		f(s);
+		calQ();
+		int count2 = 0;
+		Generator G = (Generator)malloc(sizeof(Gen));
+		for (int i = 0; i < len;i++) {
+			G->arr[count2++] = xq[i];     //每隔8位传入原始01串的索引值生成8位01串对应0-255每位值的期望值 count2代表最后生成矩阵的元素个数
+		}
+	
+		return G;
+	}
+
+
+
+
+}
